@@ -5,7 +5,12 @@ var makeRequest = function( url ) {
   request.open( "GET", url );
   request.addEventListener( "load", function() {
     var countries = JSON.parse( this.responseText )
-    addCountriesToList(countries)
+    var countryToRestore = restore()
+    addCountriesToList(countries, countryToRestore)
+    var select = document.getElementById("selectCountry")
+
+    console.log(countryToRestore)
+    reloadBorders(countries, countryToRestore)
   })
   request.send()
 }
@@ -19,15 +24,16 @@ var render = function(country){
   countryCapital.innerText = "Capital: " + country.capital
 }
 
-var addCountriesToList = function( countries ) {
+var addCountriesToList = function( countries, countryToRestore ) {
   var select = document.getElementById("selectCountry")
   countries.forEach( function(country, index) {
     var option = document.createElement("option")
+    if (country.name === countryToRestore.name) option.selected = true
     option.innerText = country.name
     option.value = index
     select.appendChild(option)
-
   })
+
   select.addEventListener("change", function () {
   var div = document.getElementById('bordering')
   div.innerHTML = " "
@@ -35,6 +41,8 @@ var addCountriesToList = function( countries ) {
     var country = countries[this.value]
     save(country)
     render(country)
+    renderMap(country)
+
       for (alphaCode of country.borders) {
         for (country of countries) {
           if (country.alpha3Code === alphaCode) {
@@ -51,6 +59,7 @@ var addCountriesToList = function( countries ) {
 var restore = function () {
   var jsonString = localStorage.getItem("country")
   var savedCountry = JSON.parse(jsonString)
+
   return savedCountry
 }
 
@@ -77,8 +86,50 @@ var renderBordering = function(country){
 
 makeRequest( url )
 
+var renderMap = function (country) {
+  var mapDiv= document.getElementById('main-map')
+  var center = {lat: country.latlng[0], lng: country.latlng[1]}
+  var mainMap = new MapWrapper(mapDiv, center, 10)
+}
+
+var reloadBorders = function (countries, country) {
+  var div = document.getElementById('bordering')
+  div.innerHTML = " "
+  var borders = []
+  console.log(country)
+  for (alphaCode of country.borders) {
+    for (country of countries) {
+      if (country.alpha3Code === alphaCode) {
+          borders.push(country)
+      }
+    }
+  }
+  for (bordering of borders) {
+    renderBordering(bordering)
+  }
+}
+
+// var returnIndexOfCountry = function (countries, country) {
+//   countries.forEach( function(each, index) {
+//     if (each.name === country.name)
+//     return index
+//   })
+//
+// }
+
 window.addEventListener("load", function() {
-  render(restore())
+
+  var countryToRestore = restore()
+  render(countryToRestore)
+  renderMap(countryToRestore)
+  // reloadBorders(countryToRestore)
+  // var select = document.getElementById("selectCountry")
+  // select.value = countryToRestore.name
+  // var center = {lat: 55.9441, lng: -3.1618}
+  // var mapDiv= document.getElementById('main-map')
+  // // var center = {lat: country.latlang[0], lng: country.latlang[1]}
+  // var mainMap = new MapWrapper(mapDiv, center, 10)
+  // mainMap.addMarker(center)
 })
 
 
